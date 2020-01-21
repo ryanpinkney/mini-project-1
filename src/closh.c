@@ -1,5 +1,5 @@
 // closh.c - COSC 315, Winter 2020
-// Ryan Pinkney, Lawrence Fritzler, Jeff Thompson
+// Group 31 (Ryan Pinkney, Lawrence Fritzler, Jeff Thomson)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -7,7 +7,6 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <time.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -64,57 +63,49 @@ int main() {
         // to implement the rest of closh                     //
         //                                                    //
         // /////////////////////////////////////////////////////
-       
-	//get the basic information
-	int cid = getpid();
-	int parentID = getpid();
-	//if statments to determine whether code runs parallel or sequentially
-	if(parallel){
-		for(int i = 0; i < count; i++){
-			//for loop for parallel case forks for the counted times
-			//the child cannot fork and leaves the for loop on its next iteration
-			if(cid != 0){
-				cid = fork();
-			} else {
-				break;
-			}
-			
-		}
-
-
-	} else {
-		for(int i = 0; i < count; i++){
-			//for loop for sequential case forks for the counted times waiting after each fork
-			//the child cannot fork and leaves the for loop on its next iteration
-			if(cid != 0){
-				cid = fork();
-				waitpid(cid, 0, 0);
-			} else {
-				break;
-			}
-			
-		}
-
-	}
-	//timeout which kills parent if process takes too long
-	int time = 0;
-	if(timeout >=1 && timeout <= 9){
-		time = clock();
-	}
-	//when the child process reaches this point it will execute the pre-determined commands the parent will ignore
-	if(cid == 0){
-		execvp(cmdTokens[0], cmdTokens); 
-		printf("%d ", parentID);
-		printf("%s \n", cmdTokens[0]);
-		if(time != 0 && (clock() - time)/CLOCKS_PER_SEC > timeout){
-			kill(parentID, SIGKILL);
-		}
-		exit(0);
-	}
+        
+        /* Starter Code
         // just executes the given command once - REPLACE THIS CODE WITH YOUR OWN
-        // replaces the current process with the given program
+        execvp(cmdTokens[0], cmdTokens); // replaces the current process with the given program
         // doesn't return unless the calling failed
         printf("Can't execute %s\n", cmdTokens[0]); // only reached if running the program failed
-        exit(1);        
+        exit(1);
+        */
+
+        for(int i = 0; i < count; i++) {
+
+        	int pid = fork();
+        	if(pid == 0) {
+
+        		int taskpid = fork();
+        		if(taskpid == 0) {
+        			execvp(cmdTokens[0], cmdTokens);
+        			printf("Can't execute %s\n", cmdTokens[0]);
+        			exit(1);
+        		}
+
+        		int timerpid = fork();
+        		if(timerpid == 0) {
+        			sleep(timeout);
+        			printf("Timeout occured\n");
+        			kill(taskpid, SIGKILL);
+        			exit(0);
+        		}
+
+        		waitpid(taskpid, 0, 0);
+        		kill(timerpid, SIGKILL);
+        		exit(0);
+
+        	}
+
+        	if(!parallel) {
+        		waitpid(pid, 0, 0);
+        	}
+
+        }
+
+        while(wait(0) != -1);
+
     }
 }
+
