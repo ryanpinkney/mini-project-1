@@ -98,6 +98,7 @@ int main() {
 	if(cid == 0){
 		printf("%d", parentID);
 		printf("%s", cmdTokens[0]);
+		exit(1);
 	}
         // just executes the given command once - REPLACE THIS CODE WITH YOUR OWN
         execvp(cmdTokens[0], cmdTokens); // replaces the current process with the given program
