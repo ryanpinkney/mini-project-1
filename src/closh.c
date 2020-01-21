@@ -71,39 +71,60 @@ int main() {
         printf("Can't execute %s\n", cmdTokens[0]); // only reached if running the program failed
         exit(1);
         */
-
+	
+	// Loop to create processes until we reach our count
         for(int i = 0; i < count; i++) {
-
+		
+		// Fork new process
         	int pid = fork();
-        	if(pid == 0) {
-
+        	if(pid == 0) { // If we are the child process
+			
+			// Create a process to run our task
         		int taskpid = fork();
-        		if(taskpid == 0) {
+        		if(taskpid == 0) { // If we are the child process
+				// Execute given command
         			execvp(cmdTokens[0], cmdTokens);
+				// Exit with error message if command fails
         			printf("Can't execute %s\n", cmdTokens[0]);
         			exit(1);
         		}
-
+			// Since we always exit inside the conditional, code below is only run
+			// by the parent process (i.e., implicitly, else we are the parent)
+			
+			// Create a timer process for this command
         		int timerpid = fork();
-        		if(timerpid == 0) {
+        		if(timerpid == 0) { // If we are the child process
+				// Sleep this thread until we cross our timeout threshold
         			sleep(timeout);
+				// We have now timed out, so kill task process and exit
         			printf("Timeout occured\n");
         			kill(taskpid, SIGKILL);
         			exit(0);
         		}
-
+			// Again, below code is only run by the parent process.
+			
+			// Wait until task process is terminated. This could be either because
+			// it completed or because the timer killed the task process.
         		waitpid(taskpid, 0, 0);
+			// Kill the timer process (if it is still running) and exit.
         		kill(timerpid, SIGKILL);
         		exit(0);
 
         	}
-
+		
+		// If we are in sequential mode, we must wait for the first iteration to complete
+		// before spawning the next iteration. Otherwise, if we are parallel, we simply
+		// spawn all our threads as soon as possible.`
         	if(!parallel) {
         		waitpid(pid, 0, 0);
         	}
 
         }
-
+	
+	// This line of code causes our main loop to hold until all the child processs complete.
+	// wait(0) blocks execution until any one child process terminates. If there are no child
+	// processs which we could wait for, it instead returns -1. Thus, if wait(0) returns -1,
+	// we assume all our child processes are finished, and we can continue with our main loop.
         while(wait(0) != -1);
 
     }
