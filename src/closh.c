@@ -125,6 +125,7 @@ int main() {
 	// wait(0) blocks execution until any one child process terminates. If there are no child
 	// processs which we could wait for, it instead returns -1. Thus, if wait(0) returns -1,
 	// we assume all our child processes are finished, and we can continue with our main loop.
+	// Here 0 specifies to wait for any child to finish.
 		while(wait(0) != -1);
 
 	}
